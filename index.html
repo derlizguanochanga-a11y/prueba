@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Control de Puertas - Turi 03</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --wood-dark:    #1a0a02;
+      --amber:        #c8620a;
+      --amber-bright: #e07820;
+      --red-btn:      #cc2200;
+      --green-online: #00e676;
+      --text-dim:     rgba(200, 130, 60, 0.5);
+      --radius:       14px;
+    }
+
+    body {
+      font-family: 'Orbitron', system-ui, sans-serif;
+      background: #0d0502;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem 1rem;
+    }
+
+    .panel {
+      width: 100%; max-width: 480px;
+      background: linear-gradient(145deg, #2a1005 0%, #1e0c03 60%, #160900 100%);
+      border-radius: 18px;
+      border: 1.5px solid rgba(180,80,15,0.45);
+      padding: 2rem 1.5rem;
+      box-shadow: 0 0 40px rgba(150,50,5,0.25), inset 0 0 50px rgba(10,4,1,0.6);
+    }
+
+    /* HEADER */
+    .panel-header {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 1.5rem; padding-bottom: 1.2rem;
+      border-bottom: 1px solid rgba(180,70,15,0.25);
+    }
+    .header-logo {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: rgba(180,60,10,0.2); border: 1px solid rgba(180,80,15,0.4);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--amber-bright); font-size: 22px;
+    }
+    .header-text { flex: 1; }
+    .panel-title { font-size: 15px; font-weight: 700; color: var(--amber-bright); text-transform: uppercase; }
+    .panel-sub { font-size: 9px; color: var(--text-dim); text-transform: uppercase; margin-top: 3px; }
+    .panel-time { font-size: 13px; font-weight: 700; color: var(--amber); }
+
+    /* CONEXIÓN */
+    .connection-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(10, 4, 1, 0.5); border: 1px solid rgba(160, 65, 10, 0.25);
+      border-radius: 10px; padding: 10px 16px; margin-bottom: 1.5rem;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .connection-bar:hover { background: rgba(15, 6, 2, 0.7); }
+    .conn-info { display: flex; align-items: center; gap: 10px; color: var(--amber); font-size: 11px; font-weight: 700; }
+    .conn-status { display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--text-dim); }
+    .esp-led { width: 10px; height: 10px; border-radius: 50%; background: #3a1a00; border: 1px solid rgba(180, 70, 20, 0.3); }
+    
+    .connection-bar.connected .esp-led {
+      background: var(--green-online); border-color: #80ffb4;
+      box-shadow: 0 0 10px rgba(0, 230, 118, 0.6);
+    }
+    .connection-bar.connected .conn-status-text { color: var(--green-online); }
+
+    /* PUERTAS Y BOTONES */
+    .door-section {
+      background: rgba(10,4,1,0.4);
+      border: 1px solid rgba(160,65,10,0.15);
+      border-radius: 12px; padding: 1rem; margin-bottom: 1rem;
+    }
+    .door-title {
+      font-size: 11px; color: var(--amber); text-transform: uppercase;
+      letter-spacing: 0.15em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .btn {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      padding: 14px 10px; background: linear-gradient(160deg, #1c0e06 0%, #110804 100%);
+      border: 1px solid rgba(160,65,10,0.35); border-radius: 10px;
+      cursor: pointer; transition: all 0.1s; color: rgba(190, 100, 40, 0.7);
+    }
+    .btn:active { transform: scale(0.95); }
+    .btn i { font-size: 28px; }
+    .btn span { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+
+    /* Estilos específicos de Abrir/Cerrar */
+    .btn-open:active { border-color: var(--green-online); background: rgba(0, 230, 118, 0.1); color: var(--green-online); }
+    .btn-close:active { border-color: var(--red-btn); background: rgba(204, 34, 0, 0.1); color: #ff5530; }
+  </style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="panel-header">
+    <div class="header-logo"><i class="ti ti-bus"></i></div>
+    <div class="header-text">
+      <div class="panel-title">Turi 03 - Puertas</div>
+      <div class="panel-sub">Sistema Electrovalvulas</div>
+    </div>
+    <div class="panel-time" id="clock">12:10</div>
+  </div>
+
+  <div class="connection-bar" id="espBar" onclick="connectBluetooth()">
+    <div class="conn-info"><i class="ti ti-bluetooth"></i><span>ESP32 BLUETOOTH</span></div>
+    <div class="conn-status"><span class="conn-status-text" id="connText">TOCAR PARA CONECTAR</span><div class="esp-led"></div></div>
+  </div>
+
+  <!-- PUERTA CHOFER -->
+  <div class="door-section">
+    <div class="door-title"><i class="ti ti-steering-wheel"></i> Puerta del Chofer</div>
+    <div class="btn-group">
+      <button class="btn btn-open" onclick="sendCommand('A')">
+        <i class="ti ti-door-enter"></i><span>Abrir</span>
+      </button>
+      <button class="btn btn-close" onclick="sendCommand('B')">
+        <i class="ti ti-door-exit"></i><span>Cerrar</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- PUERTA PASAJEROS -->
+  <div class="door-section">
+    <div class="door-title"><i class="ti ti-users"></i> Puerta de Pasajeros</div>
+    <div class="btn-group">
+      <button class="btn btn-open" onclick="sendCommand('C')">
+        <i class="ti ti-door-enter"></i><span>Abrir</span>
+      </button>
+      <button class="btn btn-close" onclick="sendCommand('D')">
+        <i class="ti ti-door-exit"></i><span>Cerrar</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Reloj
+  function updateTime() {
+    const now = new Date();
+    document.getElementById('clock').textContent = 
+      String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  }
+  setInterval(updateTime, 1000); updateTime();
+
+  // Lógica Bluetooth BLE
+  let bleDevice;
+  let bleCharacteristic;
+  const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+  const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+
+  async function connectBluetooth() {
+    if (bleDevice && bleDevice.gatt.connected) {
+      bleDevice.gatt.disconnect();
+      return;
+    }
+
+    try {
+      bleDevice = await navigator.bluetooth.requestDevice({
+        filters: [{ name: 'TURI_03_ESP32' }],
+        optionalServices: [SERVICE_UUID]
+      });
+
+      bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+      
+      document.getElementById('connText').textContent = 'CONECTANDO...';
+      const server = await bleDevice.gatt.connect();
+      const service = await server.getPrimaryService(SERVICE_UUID);
+      bleCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+      document.getElementById('espBar').classList.add('connected');
+      document.getElementById('connText').textContent = 'CONECTADO';
+    } catch (error) {
+      console.error("Error de conexión:", error);
+      document.getElementById('connText').textContent = 'ERROR / CANCELADO';
+    }
+  }
+
+  function onDisconnected() {
+    document.getElementById('espBar').classList.remove('connected');
+    document.getElementById('connText').textContent = 'DESCONECTADO';
+    bleCharacteristic = null;
+  }
+
+  async function sendCommand(cmd) {
+    if (!bleCharacteristic) {
+      alert("Primero conecta el ESP32 mediante Bluetooth.");
+      return;
+    }
+    try {
+      const encoder = new TextEncoder();
+      await bleCharacteristic.writeValue(encoder.encode(cmd));
+      console.log("Comando enviado:", cmd);
+    } catch (error) {
+      console.error("Error al enviar comando:", error);
+    }
+  }
+</script>
+
+</body>
+</html>
